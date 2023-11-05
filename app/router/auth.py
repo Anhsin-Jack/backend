@@ -24,3 +24,4 @@ async def refresh_token(token: schemas.RefreshToken,db: Session = Depends(get_db
     current_user = oauth2.get_current_user_with_refresh_token(refresh_token = refresh_token, db = db)
     new_access_token = oauth2.create_access_token(data={"user_id": current_user.user_id})
     return {"access_token": new_access_token, "token_type": "bearer"}
+
