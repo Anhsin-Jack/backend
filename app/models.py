@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Float, LargeBinary, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, LargeBinary, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from .database import Base
 from sqlalchemy.sql import func

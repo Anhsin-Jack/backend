@@ -7,8 +7,9 @@ class Settings(BaseSettings):
     db_name: str
     secret_key : str
     algorithm : str
-    access_token_expire_minutes : int
-    refresh_token_expire_hours: int
+    access_token_expire_weeks : int
+    refresh_token_expire_weeks: int
+    pin_expiration_time : int
     
     class Config:
         env_file = ".env"

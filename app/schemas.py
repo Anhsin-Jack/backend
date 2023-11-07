@@ -1,8 +1,8 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-
 from pydantic.types import conint
 
+"""Create User"""
 class UserCreate(BaseModel):
     username : str
     email: EmailStr
@@ -18,44 +18,32 @@ class UserOut(BaseModel):
     class Config:
         from_attributes = True
 
-class UserLogin(BaseModel):
+"""Login User"""
+class UserLoginIn(BaseModel):
     email: EmailStr
     password: str
 
 
 class Token(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: str
-
-class NewToken(BaseModel):
-    access_token:str
-    token_type:str
-
-class RefreshToken(BaseModel):
-    refresh_token:str
 
 
 class TokenData(BaseModel):
     id: Optional[str] = None
 
 
-class Vote(BaseModel):
-    post_id: int
-    dir: conint(le=1)
-
-class Questions(BaseModel):
-    question: str
-    question_id : int
-
 class ChangePassword(BaseModel):
     password: str
 
-class Chatbot(BaseModel):
-    query : str
+class UserEmail(BaseModel):
+    user_email:EmailStr
 
-class UserId(BaseModel):
-    id : int
-    update_username: str
-class UserlistKeyword(BaseModel):
-    keyword : str
+class VerifyPin(BaseModel):
+    pin_number:str
+    email:EmailStr
+
+class ResetPassword(BaseModel):
+    email: EmailStr
+    password: str
+    confirm_password:str
