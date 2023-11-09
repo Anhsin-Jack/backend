@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
-from ..database import get_db
-from .. import schemas, models, utils, oauth2
+import sys
+sys.path.append("/Users/michaelchee/Documents/backend/app")
+from database import get_db
+import schemas, models, utils, oauth2
 import random, string, smtplib, redis
 from fastapi.responses import JSONResponse
-from ..config import settings
+from config import settings
 
 access_token_expiration_time = settings.access_token_expire_weeks*7*24*60*60 # 1 month
 refresh_token_expiration_time = settings.refresh_token_expire_weeks*7*24*60*60 # 1 year

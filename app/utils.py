@@ -1,8 +1,10 @@
 from passlib.context import CryptContext
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from . import oauth2
-from . import models
+import sys
+sys.path.append("/Users/michaelchee/Documents/backend/app")
+import oauth2
+import models
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated = "auto")
 

@@ -47,3 +47,19 @@ class ResetPassword(BaseModel):
     email: EmailStr
     password: str
     confirm_password:str
+
+class UserInput(BaseModel):
+    message: str
+    analysis_results:str
+    industry:str
+
+class Text2SQL(BaseModel):
+    message: str
+    industry:str
+    language:str
+
+class GetAnalysisResults(BaseModel):
+    message: str
+    data: dict
+    industry:str
+    language:str

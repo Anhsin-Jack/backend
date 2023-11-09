@@ -1,7 +1,9 @@
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, Date, LargeBinary, ForeignKey, Enum
 from sqlalchemy.orm import relationship
-from .database import Base
+import sys
+sys.path.append("/Users/michaelchee/Documents/backend/app")
+from database import Base
 from sqlalchemy.sql import func
 
 # Users Table

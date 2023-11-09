@@ -1,9 +1,11 @@
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from . import database, models
+import sys
+sys.path.append("/Users/michaelchee/Documents/backend/app")
+import database, models
 from fastapi import status, HTTPException, Depends
 from sqlalchemy.orm import Session
-from .config import settings
+from config import settings
 import redis
 
 
