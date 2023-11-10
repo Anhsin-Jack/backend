@@ -7,7 +7,6 @@ class UserCreate(BaseModel):
     username : str
     email: EmailStr
     password: str
-    confirm_password: str
     role: str
 
 class UserOut(BaseModel):
@@ -46,11 +45,10 @@ class VerifyPin(BaseModel):
 class ResetPassword(BaseModel):
     email: EmailStr
     password: str
-    confirm_password:str
 
 class UserInput(BaseModel):
     message: str
-    analysis_results:str
+    data:dict
     industry:str
 
 class Text2SQL(BaseModel):
@@ -58,8 +56,11 @@ class Text2SQL(BaseModel):
     industry:str
     language:str
 
-class GetAnalysisResults(BaseModel):
-    message: str
-    data: dict
-    industry:str
-    language:str
+class DatabaseConnection(BaseModel):
+    database_host:str
+    database_user:str
+    database_name:str
+    database_password:str
+
+class CSVData(BaseModel):
+    csv_id:str

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Header
 from sqlalchemy.orm import Session
 import sys
 sys.path.append("/Users/michaelchee/Documents/backend/app")
@@ -7,6 +7,8 @@ import schemas, models, utils, oauth2
 import random, string, smtplib, redis
 from fastapi.responses import JSONResponse
 from config import settings
+from redis import Redis
+from database import get_redis_client
 
 access_token_expiration_time = settings.access_token_expire_weeks*7*24*60*60 # 1 month
 refresh_token_expiration_time = settings.refresh_token_expire_weeks*7*24*60*60 # 1 year
@@ -18,16 +20,76 @@ router = APIRouter(
     tags=['Authentication']
 )
 
+
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
+async def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    """
+    Create a new user.
+
+    **Input:**
+    - `user` (schemas.UserCreate): User creation request object containing the following fields:
+        - `username` (str): User's username.
+        - `email` (EmailStr): User's email address.
+        - `password` (str): User's password.
+        - `role` (str): User's role.
+
+    **Output:**
+    - `new_user` (schemas.UserOut): User creation response object containing:
+        - `user_id` (int): Unique identifier for the newly created user.
+        - `username` (str): User's username.
+        - `email` (EmailStr): User's email address.
+
+    **Raises:**
+    - `HTTPException` with status code 404 if password and confirm password do not match.
+    - `HTTPException` with status code 400 if there is an issue during user creation.
+
+    **Procedure:**
+    1. Hash the user's password for security.
+    2. Create a dictionary representation of the user object.
+    3. Remove the `confirm_password` field from the dictionary.
+    4. Create a new user instance with the modified dictionary.
+    5. Add the new user to the database, commit the transaction, and refresh the user instance.
+    6. Rollback the transaction and raise an exception if there are any issues during the process.
+    """
+    # hash the password
+    hashed_password = utils.hash(user.password)
+    user.password = hashed_password
+    user_dict = user.model_dump()
+    new_user = models.User(**user_dict)
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=str(e))
+    return new_user
+
 @router.post('/login', response_model = schemas.Token)
 async def login(user_info: schemas.UserLoginIn,  db:Session = Depends(get_db)):
     """
-        This api is used to login to the dashboard.
-        Input:
-            user_credentials: (username, password)
-        Output:
-            A dictionary contains:
-            access_token: to be used in the Authorization header
-            token_type: always bearer
+    Log in to the dashboard and generate access and refresh tokens.
+
+    **Input:**
+    - `user_info` (schemas.UserLoginIn): User login request object containing:
+        - `email` (EmailStr): User's email address.
+        - `password` (str): User's password.
+
+    **Output:**
+    - A dictionary containing:
+        - `access_token` (str): Token to be used in the Authorization header.
+        - `token_type` (str): Always "bearer".
+
+    **Raises:**
+    - `HTTPException` with status code 401 if the provided credentials are invalid.
+
+    :param user_info: User login request payload.
+    :type user_info: schemas.UserLoginIn
+    :param db: Database session dependency.
+    :type db: Session
+    :return: Dictionary with access token and token type.
+    :rtype: dict
     """
     r = redis.Redis(host='localhost', port=6379, db=0)
     user = db.query(models.User).filter(models.User.email == user_info.email).first()
@@ -38,8 +100,18 @@ async def login(user_info: schemas.UserLoginIn,  db:Session = Depends(get_db)):
     access_token, refresh_token = oauth2.create_access_refresh_token(data = {"user_id": user.user_id})
     r.setex(f"{user.user_id}:access_token", access_token_expiration_time, access_token)
     r.setex(f"{user.user_id}:refresh_token", refresh_token_expiration_time, refresh_token)
-    return {"access_token": access_token,"token_type": "bearer"}
+    return {"access_token": access_token,"token_type": "bearer","expires_in":access_token_expiration_time}
 
+@router.post('/logout')
+async def logout(db: Session = Depends(get_db),access_token :str =  Header(None),r:Redis = Depends(get_redis_client)):
+    current_user = utils.authentication(access_token,db)
+    try:
+        r.delete(f"{current_user.user_id}:access_token")
+        r.delete(f"{current_user.user_id}:refresh_token")
+    except ConnectionError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to connect to the Redis server")
+    return JSONResponse(content={"message": "Successfully logout"}, status_code=200)
+    
 @router.post("/refresh_token/{user_id}", response_model = schemas.Token)
 async def refresh_token(user_id:int):
     """
@@ -57,10 +129,11 @@ async def refresh_token(user_id:int):
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Refresh token expired or does not exist with user_id: {user_id}")
     new_access_token, _ = oauth2.create_access_refresh_token(data={"user_id": user_id}, is_access_only=True)
     r.setex(f"{user_id}:access_token", access_token_expiration_time, new_access_token)
-    return {"access_token": new_access_token, "token_type": "bearer"}
+    return {"access_token": new_access_token, "token_type": "bearer","expires_in":access_token_expiration_time}
 
-@router.post('/send_pin_to_email')
-async def send_pin_to_email(user_email:schemas.UserEmail, db: Session = Depends(get_db)):
+
+@router.post('/send_pin')
+async def send_pin(user_email:schemas.UserEmail, db: Session = Depends(get_db)):
     """
         This function is to send pin to user email when user forgot password, user need to receive pin for verification.
         Input:
@@ -73,7 +146,7 @@ async def send_pin_to_email(user_email:schemas.UserEmail, db: Session = Depends(
     user_email = user_email.user_email
     user = db.query(models.User).filter(models.User.email == user_email).first()
     if not user:
-        raise HTTPException(status_code = status.HTTP_403_FORBIDDEN, detail = "Invalid Credentials, no user")
+        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = "Invalid Credentials, no user")
     
     # Generate a random PIN with the specified length (default is 6 digits)
     characters = string.digits
@@ -141,8 +214,7 @@ async def reset_password(user_info: schemas.ResetPassword, db: Session = Depends
         Input:
             password: schemas.ResetPassword
             (email: EmailStr
-            password: str
-            confirm_password:str)
+            password: str)
         Output:
             A dictionary contains:
             reset_password_status : True if reset password sucessful.
@@ -152,9 +224,6 @@ async def reset_password(user_info: schemas.ResetPassword, db: Session = Depends
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"password with email: {user_info.email} does not exist")
-    if user_info.password != user_info.confirm_password:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Confirm Password and Password not the same")
     hashed_password = utils.hash(user_info.password)
     if user.password != hashed_password:
         user_query.update({"password":hashed_password},synchronize_session=False)
@@ -165,3 +234,54 @@ async def reset_password(user_info: schemas.ResetPassword, db: Session = Depends
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=str(e))
     return JSONResponse(content={"message": f"Reset password sucessfully."}, status_code=200)
+
+
+
+@router.get('/get_user/{user_id}', response_model=schemas.UserOut)
+async def get_user(user_id: int, db: Session = Depends(get_db), access_token :str =  Header(None)):
+    """
+        This api is to get user details depends on the user id.
+        Input:
+            user_id : int
+
+        Output:
+            user: User
+            (user_id: int
+            username : str
+            email: EmailStr)
+    """
+    print(access_token)
+    utils.authentication(access_token,db)
+    user = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"User with id: {user_id} does not exist")
+    return user
+
+@router.post('/change_password')
+async def change_password(password: schemas.ChangePassword, db: Session = Depends(get_db), access_token :str =  Header(None)):
+    """
+        This api is to change user's password.
+        Input:
+            password: schemas.ChangePassword
+            (password: str)
+        Output:
+            A JSONResponse contains message "Successfully change password" if change password sucessful.
+    """
+    current_user = utils.authentication(access_token,db)
+    user_query = db.query(models.User).filter(models.User.user_id == current_user.user_id)
+    user = user_query.first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"password with id: {current_user.user_id} does not exist")
+    hashed_password = utils.hash(password.password)
+    if user.password != hashed_password:
+        user_query.update({"password":hashed_password},synchronize_session=False)
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=str(e))
+    return JSONResponse(content={"message": "Successfully change password"}, status_code=200)
+

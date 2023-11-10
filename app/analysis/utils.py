@@ -182,30 +182,6 @@ def analyse(query:str,df:pd.DataFrame,company_description:str,analysis_step:str)
     variables, prints, plots = execute_code(codes, {"df":df})
     return [variables, prints, plots]
 
-def get_recommendation_no_stream(query:str, analysis_results:str,industry:str,language:str):
-    system_message = prompts.get_recommendation_system_message(analysis_results,industry,language)
-    messages=[
-        {"role": "system", "content": system_message},
-        {"role": "user", "content": query}
-    ]
-    for response in use_openai(model="gpt-4-1106-preview",message=messages,temperature=0, stream=True):
-        if response.choices[0].delta.content:
-            print(response.choices[0].delta.content)
-
-# def get_recommendation_stream(query:str, analysis_results:str,industry:str,language:str):
-#     system_message = prompts.get_recommendation_system_message(analysis_results,industry,language)
-#     messages=[
-#         {"role": "system", "content": system_message},
-#         {"role": "user", "content": query}
-#     ]
-#     full_response = ""
-#     for response in use_openai(model="gpt-4-1106-preview",message=messages,temperature=0,stream = True):
-#         # Iterate through and display each chunch
-#         full_response += response.choices[0].delta.content
-#         return_response = full_response +"▌ "
-#         return return_response
-#         time.sleep(0.1)
-#     yield f"data: {full_response}\n\n"
 async def get_analysis_recommendation(query:str,data:dict, company_description:str,analysis_steps:str, language:str):
     df = pd.DataFrame(data)
     results = analyse(query,df,company_description,analysis_steps)

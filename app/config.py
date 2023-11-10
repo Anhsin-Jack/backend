@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     aws_access_key: str
     aws_secret_key:str
     aws_bucket_name:str
+    mongo_db_host:str
+    mongo_db_name:str
+    mongo_db_collection:str
+    redis_db_host:str
+    secret_key_encryp:str
     
     class Config:
         env_file = ".env"

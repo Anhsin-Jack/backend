@@ -10,8 +10,8 @@ from config import settings
 
     
 class Text2SQL():    
-    def __init__(self):
-        self.db_uri = f"mysql+pymysql://{settings.database_user}:{settings.database_password}@{settings.database_host}/{settings.database_name}"
+    def __init__(self,db_uri:str):
+        self.db_uri = db_uri
         self.engine = create_engine(self.db_uri)
     def get_table_column(self, engine: Engine) -> str:
         inspector = Inspector.from_engine(engine)

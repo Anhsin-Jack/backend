@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import sys
 sys.path.append("/Users/michaelchee/Documents/backend/app")
 from database import Base, engine
-from router import user, auth, audit_trail,analysis
+from router import user, auth, audit_trail,analysis,datasources
 from fastapi.middleware.cors import CORSMiddleware
 
 # 创建数据库表格
@@ -22,3 +22,4 @@ app.include_router(user.router)
 app.include_router(auth.router)
 app.include_router(audit_trail.router)
 app.include_router(analysis.router)
+app.include_router(datasources.router)
