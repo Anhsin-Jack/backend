@@ -10,8 +10,8 @@ from config import settings
 from redis import Redis
 from database import get_redis_client
 
-access_token_expiration_time = settings.access_token_expire_weeks*7*24*60*60 # 1 month
-refresh_token_expiration_time = settings.refresh_token_expire_weeks*7*24*60*60 # 1 year
+access_token_expiration_time = settings.access_token_expire_hours*60*60 
+refresh_token_expiration_time = settings.refresh_token_expire_weeks*7*24*60*60
 
 pin_expiration_time = settings.pin_expiration_time # 5 minutes
 
@@ -51,6 +51,9 @@ async def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     5. Add the new user to the database, commit the transaction, and refresh the user instance.
     6. Rollback the transaction and raise an exception if there are any issues during the process.
     """
+    check_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if check_user:
+        raise HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = f"This email already registered: {user.email}")
     # hash the password
     hashed_password = utils.hash(user.password)
     user.password = hashed_password
@@ -129,6 +132,8 @@ async def refresh_token(user_id:int):
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Refresh token expired or does not exist with user_id: {user_id}")
     new_access_token, _ = oauth2.create_access_refresh_token(data={"user_id": user_id}, is_access_only=True)
     r.setex(f"{user_id}:access_token", access_token_expiration_time, new_access_token)
+    refresh_token = refresh_token.decode('utf-8')
+    r.expire(f"{user_id}:refresh_token", refresh_token_expiration_time)
     return {"access_token": new_access_token, "token_type": "bearer","expires_in":access_token_expiration_time}
 
 

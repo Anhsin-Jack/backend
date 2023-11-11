@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     db_name: str
     secret_key : str
     algorithm : str
-    access_token_expire_weeks : int
+    access_token_expire_hours : int
     refresh_token_expire_weeks: int
     pin_expiration_time : int
     openai_api_key: str
