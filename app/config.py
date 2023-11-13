@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     mongo_db_collection:str
     redis_db_host:str
     secret_key_encryp:str
+    bootstrap_servers:str
+    instance_name: str
     
     class Config:
         env_file = ".env"

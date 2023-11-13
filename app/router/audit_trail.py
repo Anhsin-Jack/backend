@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 import sys
-sys.path.append("/Users/michaelchee/Documents/backend/app")
-from database import get_db
-import models
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+sys.path.append(app_dir)
+from ..database import get_db
+from .. import models
 import time
 
 router = APIRouter(

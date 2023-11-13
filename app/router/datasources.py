@@ -3,15 +3,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from fastapi.responses import JSONResponse
 import sys
-sys.path.append("/Users/michaelchee/Documents/backend/app")
-from database import get_db, get_mongo_collection,get_redis_client
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+sys.path.append(app_dir)
+from ..database import get_db, get_mongo_collection,get_redis_client
 from pymongo.collection import Collection
-import utils, schemas,models
+from .. import utils, schemas,models
+from ..kafka import config
+from ..kafka.producers import producer_manager
 from redis import Redis
 import pandas as pd
 import redis
 from bson import ObjectId
-from analysis.text2sql import Text2SQL
 
 router = APIRouter(
     prefix="/datasources",
@@ -69,20 +74,22 @@ async def delete_csv(access_token :str =  Header(None),db:Session = Depends(get_
 async def add_database(connections: schemas.DatabaseConnection, db:Session = Depends(get_db), access_token :str =  Header(None)):
     current_user = utils.authentication(access_token,db)
     database_key = f"{connections.database_host}:{connections.database_name}:{connections.database_user}:{connections.database_password}"
-    db_connections = db.query(models.ClientDatabaseInfo).filter(models.ClientDatabaseInfo.user_id == current_user.user_id).all()
+    db_connections = db.query(models.ClientDatabaseInfo).filter(models.User.user_id == current_user.user_id).all()
     for connection in db_connections:
         if utils.decrypt_data(connection.database_keys) == database_key:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Connection exists.")
-    encrypted_key = utils.encrypt_data(database_key)
-    new_connection = models.ClientDatabaseInfo(**{"user_id":current_user.user_id,"database_keys":encrypted_key.decode()})
-    try:
-        # Attempt to insert the log
-        db.add(new_connection)
-        db.commit()
-        db.refresh(new_connection)
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to connect to database: {str(e)}")
+    encrypted_key = utils.encrypt_data(database_key).decode()
+    kafka_value = {
+        "action": config.KafkaAction.WRITE_DB,
+        "data": {
+            "user_id":current_user.user_id,
+            "database_keys":encrypted_key
+        }
+    }
+    await producer_manager.send(
+        topic=config.KafkaTopic.WRITE_DB,
+        value = kafka_value
+    )
     return connections
 
 @router.post("/connect_database")
@@ -106,3 +113,4 @@ async def add_database(connections: schemas.DatabaseConnection, db:Session = Dep
     except redis.RedisError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to interact with Redis: {str(e)}")
     return JSONResponse(content={"message": f"Connect Database sucessful."}, status_code=200)
+

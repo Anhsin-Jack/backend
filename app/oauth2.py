@@ -1,22 +1,26 @@
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import sys
-sys.path.append("/Users/michaelchee/Documents/backend/app")
-import database, models
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+sys.path.append(app_dir)
+from . import database, models
 from fastapi import status, HTTPException, Depends
 from sqlalchemy.orm import Session
-from config import settings
-import redis
+from .config import settings
+from redis import Redis
 
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
-ACCESS_TOKEN_EXPIRE_WEEK = settings.access_token_expire_weeks 
+ACCESS_TOKEN_EXPIRE_HOUR = settings.access_token_expire_hours 
 REFRESH_TOKEN_EXPIRE_WEEK = settings.refresh_token_expire_weeks
 
 def create_access_refresh_token(data : dict, is_access_only = False):
     to_encode_access = data.copy()
-    expire_access = datetime.utcnow() + timedelta(weeks=ACCESS_TOKEN_EXPIRE_WEEK)
+    expire_access = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOUR)
     to_encode_access.update({"exp":expire_access})
     encoded_jwt_access = jwt.encode(to_encode_access, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -28,9 +32,8 @@ def create_access_refresh_token(data : dict, is_access_only = False):
         return encoded_jwt_access, encoded_jwt_refresh
     return encoded_jwt_access, ""
 
-def verify_access_token(token : str, credentials_exception):
+def verify_access_token(token : str, credentials_exception, r:Redis = Depends(database.get_redis_client)):
     try:
-        r = redis.Redis(host='localhost', port=6379, db=0)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         id: str = payload.get("user_id")
         if id is None:
@@ -42,6 +45,9 @@ def verify_access_token(token : str, credentials_exception):
         if token != access_token:
             raise credentials_exception
     except JWTError as e:
+        print(e)
+        raise credentials_exception
+    except Exception as e:
         print(e)
         raise credentials_exception
     return id

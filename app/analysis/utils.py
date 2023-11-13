@@ -2,9 +2,13 @@ import sys, re, contextlib, io, base64, boto3, datetime, uuid
 import pandas as pd
 import matplotlib.pyplot as plt
 from botocore.exceptions import NoCredentialsError
-sys.path.append("/Users/michaelchee/Documents/backend/app/analysis")
-from llms import use_openai
-import prompts
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+sys.path.append(app_dir)
+from .llms import use_openai
+from . import prompts
 import asyncio, json, pytest, time
 
 async def get_recommendation(query:str, analysis_results:str,industry:str,language:str):

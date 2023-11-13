@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Header
 from sqlalchemy.orm import Session
 import sys
-sys.path.append("/Users/michaelchee/Documents/backend/app")
-from database import get_db, get_redis_client
-import schemas, utils
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+sys.path.append(app_dir)
+from ..database import get_db, get_redis_client
+from .. import schemas, utils
 from redis import ConnectionError, Redis
 from fastapi.responses import JSONResponse, StreamingResponse
-from analysis.utils import get_recommendation, get_analysis_recommendation
-from analysis.text2sql import Text2SQL
+from ..analysis.utils import get_recommendation, get_analysis_recommendation
+from ..analysis.text2sql import Text2SQL
 import pandas as pd
 import json
 

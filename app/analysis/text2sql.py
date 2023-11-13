@@ -4,9 +4,12 @@ from sqlalchemy.engine import Engine
 from sqlalchemy import create_engine
 from sqlalchemy.engine.reflection import Inspector
 import sys
-sys.path.append("/Users/michaelchee/Documents/backend/app")
-from analysis import prompts, llms, utils
-from config import settings
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+sys.path.append(app_dir)
+from . import prompts, llms, utils
 
     
 class Text2SQL():    

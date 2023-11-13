@@ -6,8 +6,12 @@ from pymongo import MongoClient
 from redis.client import Redis
 import redis
 import sys
-sys.path.append("/Users/michaelchee/Documents/backend/app")
-from config import settings
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+sys.path.append(app_dir)
+from .config import settings
 
 SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{settings.db_user}:{settings.db_password}@{settings.db_host}/{settings.db_name}"
 MONGO_DATABASE_URL = f"mongodb://{settings.mongo_db_host}:27017/"
