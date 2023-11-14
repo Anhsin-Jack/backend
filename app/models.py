@@ -55,6 +55,9 @@ class CSuiteDashboard(Base):
     index_number = Column(Float, nullable=True, comment="Number value for the dashboard index.")
     index_percentage = Column(Float, nullable=True, comment="Percentage value for the dashboard index.")
     sql_query = Column(Text, nullable=True, comment="SQL query associated with the dashboard.")
+    graph_type = Column(String(255), nullable=True, comment="The graph type that need to show the data.")
+    x_axis = Column(String(255), nullable=True,comment="The name of the x-axis of the graph")
+    y_axis = Column(String(255), nullable=True,comment="The name of the y-axis of the graph")
     categories = relationship(CSuiteDashboardCategories)
 
 class Text2SQL(Base):

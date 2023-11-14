@@ -34,7 +34,6 @@ class Task:
 class DatabaseSchemas:
     USER = models.User.__tablename__
     USER_PROFILE = models.UserProfile.__tablename__
-    AUDIT_TRAIL = models.AuditTrail.__tablename__
     CSUITE_DASHBOARD_CATEGORIES = models.CSuiteDashboardCategories.__tablename__
     CSUITE_DASHBOARD = models.CSuiteDashboard.__tablename__
     TEXT2SQL = models.Text2SQL.__tablename__
