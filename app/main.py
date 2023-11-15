@@ -20,11 +20,19 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_methods=["GET", "POST", "PUT", "DELETE"],
+#     allow_headers=["Content-Type"],
+# )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Content-Type"],
+    allow_origins=["*"],  # Allows specified origins
+    allow_credentials=True,  # Allows cookies to be included in requests
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 app.include_router(auth.router)
