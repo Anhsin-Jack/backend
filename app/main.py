@@ -7,7 +7,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
 sys.path.append(app_dir)
 from .database import Base, engine
-from .router import auth, audit_trail,analysis,datasources
+from .router import auth, analysis, datasources
 from .logger import logger
 from .kafka.consumers import consumer_manager
 from .kafka.producers import producer_manager
@@ -36,7 +36,6 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
-app.include_router(audit_trail.router)
 app.include_router(analysis.router)
 app.include_router(datasources.router)
 
