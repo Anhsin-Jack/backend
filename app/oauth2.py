@@ -32,24 +32,28 @@ def create_access_refresh_token(data : dict, is_access_only = False):
         return encoded_jwt_access, encoded_jwt_refresh
     return encoded_jwt_access, ""
 
-def verify_access_token(token : str, credentials_exception, r:Redis = Depends(database.get_redis_client)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        id: str = payload.get("user_id")
-        if id is None:
-            raise credentials_exception
-        access_token = r.get(f"{id}:access_token")
-        if not access_token:
-            raise credentials_exception
-        access_token = access_token.decode('utf-8')
-        if token != access_token:
-            raise credentials_exception
-    except JWTError as e:
-        print(e)
+def verify_access_token(token : str, credentials_exception):
+    r = database.get_redis_client_return()
+    # try:
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    id: str = payload.get("user_id")
+    if id is None:
+        print("No Access Token Here 1")
         raise credentials_exception
-    except Exception as e:
-        print(e)
+    access_token = r.get(f"{id}:access_token")
+    if not access_token:
+        print("No Access Token Here 2")
         raise credentials_exception
+    access_token = access_token.decode('utf-8')
+    if token != access_token:
+        print("No Access Token Here 3")
+        raise credentials_exception
+    # except JWTError as e:
+    #     print(e)
+    #     raise credentials_exception
+    # except Exception as e:
+    #     print(e)
+    #     raise credentials_exception
     return id
 
 def get_current_user(token: str, db: Session = Depends(database.get_db)):

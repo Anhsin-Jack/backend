@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Header
+from fastapi import APIRouter, Depends, status, HTTPException, Header, Request
 from sqlalchemy.orm import Session
 import sys
 import os
@@ -10,15 +10,37 @@ from ..database import get_db, get_redis_client
 from .. import schemas, utils
 from redis import ConnectionError, Redis
 from fastapi.responses import JSONResponse, StreamingResponse
-from ..analysis.utils import get_recommendation, get_analysis_recommendation
+from ..analysis.utils import get_recommendation, get_analysis_recommendation, test_streamimg
 from ..analysis.text2sql import Text2SQL
 import pandas as pd
 import json
+from openai import OpenAI
+from ..config import settings
 
 router = APIRouter(
     prefix="/analysis",
     tags=['Analysis']
 )
+
+@router.post("/store_message")
+async def store_message(user_input:schemas.UserInput,r:Redis = Depends(get_redis_client)):
+    r.setex(f"test_message", 60, user_input.message)
+    return JSONResponse(content={"message": "Successfully store message"}, status_code=200)
+
+
+@router.get("/test_response")
+async def test_response(request: Request, r:Redis = Depends(get_redis_client)):
+    message = r.get("test_message")
+    if message:
+        message = message.decode('utf-8')
+    print("Message: ", message)
+    response = StreamingResponse(test_streamimg(message), media_type="text/event-stream",headers={
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*",  # Enable CORS, adjust this to match your frontend's origin
+    })
+    return response
+
 
 @router.post("/store_analysis_data")
 async def store_analysis_data(user_input:schemas.UserInput,access_token :str =  Header(None),db:Session = Depends(get_db), r:Redis = Depends(get_redis_client)):

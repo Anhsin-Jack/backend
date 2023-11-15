@@ -11,6 +11,22 @@ from .llms import use_openai
 from . import prompts
 import asyncio, json, pytest, time
 
+
+async def test_streamimg(query:str):
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": query}
+    ]
+    full_response = ""
+    for response in use_openai(model="gpt-3.5-turbo",message=messages,temperature=0,stream = True):
+        if response.choices[0].delta.content != None:
+            # Iterate through and display each chunch
+            full_response += response.choices[0].delta.content
+        return_response = full_response +"▌ "
+        yield f"data: {return_response}\n\n"
+        await asyncio.sleep(0.5)
+    yield f"data: {full_response}\n\n"
+
 async def get_recommendation(query:str, analysis_results:str,industry:str,language:str):
     system_message = prompts.get_recommendation_system_message(analysis_results,industry,language)
     messages=[
@@ -230,7 +246,8 @@ async def test_get_analysis_recommendation():
         print(response)
 
 if __name__ == "__main__":
-    pytest.main()
+    pass
+    # pytest.main()
 
     # from text2sql import Text2SQL
     # text2sql = Text2SQL()

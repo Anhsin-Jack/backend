@@ -128,11 +128,8 @@ async def login(
     return {"access_token": access_token,"token_type": "bearer","expires_in":access_token_expiration_time}
 
 @router.post('/logout')
-async def logout(
-    db: Session = Depends(get_db),
-    access_token :str =  Header(None),
-    r:Redis = Depends(get_redis_client)
-    ):
+async def logout(db: Session = Depends(get_db),access_token :str =  Header(None),r:Redis = Depends(get_redis_client)):
+    print("Access Token: ",access_token)
     current_user = utils.authentication(access_token,db)
     try:
         r.delete(f"{current_user.user_id}:access_token")

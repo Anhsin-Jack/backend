@@ -46,3 +46,10 @@ def get_redis_client() -> Redis:
         yield redis_client
     finally:
         redis_client.close()
+
+def get_redis_client_return() -> Redis:
+    try:
+        redis_client = redis.Redis(host=settings.redis_db_host)
+        return redis_client
+    finally:
+        redis_client.close()
