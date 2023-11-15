@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     secret_key_encryp:str
     bootstrap_servers:str
     instance_name: str
+    smtp_server: str
+    smtp_port:int
+    sender_email:str
+    sender_password:str
     
     class Config:
         env_file = ".env"

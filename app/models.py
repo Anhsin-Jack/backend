@@ -41,6 +41,7 @@ class CSuiteDashboardCategories(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True, comment="The unique identifier of the CSuiteDashboardCategories table.")
     user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False, index=True, comment="Foreign key linking to the User table.")
+    subject = Column(Text, nullable=False, comment="Subject of the category.")
     categories = Column(Text, nullable=False, comment="Category types for CSuite dashboards. For example, Sales, Marketing, Accounting or others.")
     data_type = Column(Enum("Index", "Analysis"), nullable=False, comment="Type of data for the category.")
     data_type_name = Column(Text, nullable=False, comment="Name of the data type. For example, ROI of the year")
@@ -54,7 +55,7 @@ class CSuiteDashboard(Base):
     category_id = Column(Integer, ForeignKey('csuite_dashboard_categories.id'), nullable=False, index=True, comment="Foreign key linking to the CSuiteDashboardCategories table.")
     index_number = Column(Float, nullable=True, comment="Number value for the dashboard index.")
     index_percentage = Column(Float, nullable=True, comment="Percentage value for the dashboard index.")
-    sql_query = Column(Text, nullable=True, comment="SQL query associated with the dashboard.")
+    API = Column(Text, nullable=True, comment="SQL query associated with the dashboard.")
     graph_type = Column(String(255), nullable=True, comment="The graph type that need to show the data.")
     x_axis = Column(String(255), nullable=True,comment="The name of the x-axis of the graph")
     y_axis = Column(String(255), nullable=True,comment="The name of the y-axis of the graph")

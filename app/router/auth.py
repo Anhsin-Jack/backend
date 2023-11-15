@@ -193,10 +193,10 @@ async def send_pin(user_email:schemas.UserEmail, db: Session = Depends(get_db),r
     except ConnectionError:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to connect to the Redis server")
     # Email configuration
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    sender_email = "c.f.y11303@gmail.com"
-    sender_password = "eaqlayonlqvkvpjf"
+    smtp_server = settings.smtp_server
+    smtp_port = settings.smtp_port
+    sender_email = settings.sender_email
+    sender_password = settings.sender_password
 
     # Create the email message
     subject = "Your PIN"

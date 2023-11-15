@@ -21,10 +21,9 @@ router = APIRouter(
 )
 
 @router.post("/store_analysis_data")
-async def store_analysis_data(user_input:schemas.UserInput,access_token :str =  Header(None),db:Session = Depends(get_db)):
+async def store_analysis_data(user_input:schemas.UserInput,access_token :str =  Header(None),db:Session = Depends(get_db), r:Redis = Depends(get_redis_client)):
     current_user = utils.authentication(access_token,db)
     try:
-        r = Redis(host='localhost', port=6379, db=0)
         r.setex(f"{current_user.user_id}:message", 60, user_input.message)
         r.setex(f"{current_user.user_id}:data", 60, json.dumps(user_input.data))
         r.setex(f"{current_user.user_id}:industry", 60, user_input.industry)
@@ -33,11 +32,10 @@ async def store_analysis_data(user_input:schemas.UserInput,access_token :str =  
     return JSONResponse(content={"message": "Successfully store analysis data"}, status_code=200)
 
 @router.get("/recommendation/{language}")
-async def recommendation(language:str, access_token :str =  Header(None), db:Session = Depends(get_db)):
+async def recommendation(language:str, access_token :str =  Header(None), db:Session = Depends(get_db),r:Redis = Depends(get_redis_client)):
     current_user = utils.authentication(access_token,db)
     # Handle Redis connection errors
     try:
-        r = Redis(host='localhost', port=6379, db=0)
         message = r.get(f"{current_user.user_id}:message")
         analysis_results = r.get(f"{current_user.user_id}:data")
         industry = r.get(f"{current_user.user_id}:industry")
@@ -70,11 +68,10 @@ async def text2sql(user_input:schemas.UserInput,access_token :str =  Header(None
     return {"analysis_steps":analysis_steps,"sql_query": sql_query}
 
 @router.get("/get_analysis_results/{language}")
-async def get_analysis_results(language:str, access_token :str =  Header(None),db:Session = Depends(get_db)):
+async def get_analysis_results(language:str, access_token :str =  Header(None),db:Session = Depends(get_db), r:Redis = Depends(get_redis_client)):
     current_user = utils.authentication(access_token,db)
     # Handle Redis connection errors
     try:
-        r = Redis(host='localhost', port=6379, db=0)
         message = r.get(f"{current_user.user_id}:message")
         analysis_results = r.get(f"{current_user.user_id}:data")
         industry = r.get(f"{current_user.user_id}:industry")
